@@ -3,6 +3,8 @@ import re
 import discord
 from dotenv import load_dotenv
 from unalix import clear_url
+import cloudscraper
+import json
 
 
 class MyClient(discord.Client):
@@ -17,21 +19,32 @@ class MyClient(discord.Client):
                     await message.add_reaction("🗑")
 
         # Extract links and clean
-        urls = re.findall("(?P<url>https?://[^\s]+)", message.content)
+
         cleaned = []
-        for url in urls:
-            if clear_url(url) != url:
-                cleaned.append(clear_url(url))
+        if message.author != client.user:
+            urls = re.findall("(?P<url>https?://[^\s]+)", message.content)
+            for url in urls:
+                amp_request = "https://www.amputatorbot.com/api/v1/convert?gac=true&md=3&q={}".format(
+                    url
+                )
+                de_amp = scraper.get(amp_request)
+                js = json.loads(de_amp.text)
+                cleared_url = (
+                    js[0]["canonical"]["url"] if (js and "canonical" in js[0]) else url
+                )
+                if cleared_url != url:
+                    cleaned.append(clear_url(cleared_url))
 
         # Send message and add reactions
         if cleaned:
             text = (
-                "It appears that you have sent one or more links with tracking parameters. Below are the same links with those fields removed:\n"
-                + "\n".join(cleaned)
+                "It appears that you have sent one or more links with tracking parameters or Google AMP links. Below are the same links with those fields removed:\n"
+                + "\n".join("||" + clean + "||" for clean in cleaned)
             )
-            await message.reply(text, mention_author=False)
+            await message.channel.send(text)
 
 
 load_dotenv()
 client = MyClient()
+scraper = cloudscraper.create_scraper()
 client.run(os.environ["TOKEN"])
