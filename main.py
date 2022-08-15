@@ -8,6 +8,13 @@ import json
 
 
 class MyClient(discord.Client):
+    async def on_ready(self):
+        await client.change_presence(
+            activity=discord.Activity(
+                type=discord.ActivityType.watching, name="for trackers"
+            )
+        )
+
     async def on_message(self, message):
         if message.author == client.user:
             permissions = message.channel.guild.me.permissions_in(message.channel)
