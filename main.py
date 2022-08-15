@@ -31,16 +31,20 @@ class MyClient(discord.Client):
         if message.author != client.user:
             urls = re.findall("(?P<url>https?://[^\s]+)", message.content)
             for url in urls:
+                cleared_url = clear_url(url)
                 amp_request = "https://www.amputatorbot.com/api/v1/convert?gac=true&md=3&q={}".format(
                     url
                 )
                 de_amp = scraper.get(amp_request)
                 js = json.loads(de_amp.text)
-                cleared_url = (
-                    js[0]["canonical"]["url"] if (js and "canonical" in js[0]) else url
-                )
+                if "error_message" not in js:
+                    cleared_url = (
+                        js[0]["canonical"]["url"]
+                        if (js and "canonical" in js[0])
+                        else cleared_url
+                    )
                 if cleared_url != url:
-                    cleaned.append(clear_url(cleared_url))
+                    cleaned.append(cleared_url)
 
         # Send message and add reactions
         if cleaned:
